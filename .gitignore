@@ -1,0 +1,7 @@
+package-lock.json
+js/local_runtime
+bin/.Trash-1000/
+.ipynb_checkpoints/
+lib/__pycache__/
+.vscode/
+data/estacoes/

@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+  driver:
+    image: selenium/standalone-chrome
+    shm_size: "4g"
+
+  jupyter:
+    depends_on:
+      - driver
+      - pg
+    image: mpl_jupyter
+    ports:
+      - "62000:8888"
+    volumes:
+      - ./data:/home/jovyan/app/data:Z
+      - ./bin:/home/jovyan/app/bin:Z
+      - ./lib:/home/jovyan/app/lib:Z
+    command: ./bin/wait-for-it.sh driver:4444 -- python bin/01_coleta.py
+    # restart: on-failure:10
+   
+  pg:
+    image: postgres:latest
+    ports: 
+      - "5432:5432"
+    volumes:
+      - pg_temperatura:/var/lib/postgresql/data:rw
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+
+  pg_brasil:
+    image: postgis/postgis:latest
+    volumes:
+      - pg_brasil:/var/lib/postgresql/data:Z
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+
+volumes:
+  pg_temperatura:
+    external: true
+    name: pg_temperatura
+  pg_brasil:
+    external: true
+    name: pg_brasil
