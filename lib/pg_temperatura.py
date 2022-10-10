@@ -34,7 +34,7 @@ type_coercion = {
     Float: float,
     BigInteger: int,
     # Boolean: lambda x: x,
-    Date: lambda x: dt.date.strptime(x, '%d/%m/%Y'),
+    Date: lambda x: dt.datetime.strptime(x, '%d/%m/%Y'),
     # DateTime: lambda x: x,
     # Time: lambda x: x
 
@@ -113,7 +113,7 @@ class Altitude(Base):
     _altitude = Column(BigInteger, primary_key=True)
     latitude = Column(Float)
     longitude = Column(Float)
-    valor = Column(Float)
+    altitude = Column(Float)
 
     def __repr__(self):
         return f'<Altitude(long={self.longitude}, lat={self.latitude})>'

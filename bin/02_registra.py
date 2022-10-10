@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import lib.pg_temperatura as pg
-
+import numpy as np
 
 def insert_registry():
     registro_cols = [
@@ -29,7 +29,9 @@ def insert_registry():
     ]
 
     fd_in = 'data/estacoes'
-    files = [os.path.join(fd_in, f) for f in os.listdir(fd_in)]
+    f_list = os.listdir(fd_in)
+    f_list.sort()
+    files = [os.path.join(fd_in, f) for f in f_list]
 
     counter_orm = (
         pg.session
@@ -44,26 +46,27 @@ def insert_registry():
         counter = 0
 
     for fp in files:
-        station_number = fp.split('_')[0]
+        station_number = fp.split('_')[0].split('/')[-1]
         station_orm = (
             pg.session
             .query(pg.Estacao)
             .filter(pg.Estacao.cd_estacao == station_number)
             .one()
         )
-        f_pd = pd.read_csv(fp, sep=';', decimal=',')[registro_cols]
+        try:
+            f_pd = pd.read_csv(fp, sep=';', decimal=',')
+        except pd.errors.EmptyDataError:
+            continue
+        f_pd = pd.DataFrame(f_pd, columns=registro_cols)
         for row_d in f_pd.to_dict(orient='records'):
-            if row_d['temperatura_C']:
+            if not np.isnan(row_d['temperatura_C']):
                 entry = pg.Registro(**{'_registro': counter, **row_d})
                 station_orm._registros.append(entry)
                 # pg.session.add(entry)
                 counter += 1
 
-        if not counter % 10000:
-            print(counter)
-            pg.session.commit()
-
-    pg.session.commit()
+        print(f'{fp}: {counter}')
+        pg.session.commit()
 
 
 def insert_station():
