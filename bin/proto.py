@@ -1,17 +1,60 @@
-import json
+# %%
+import os
+import csv
 import pandas as pd
-import requests as rq
+import geopandas as gp
+import lib.pg_brasil as br
+import matplotlib.pyplot as plt
 
-params = {
-    'stationCode': 82689,
-    'startDate': '01/01/1984',
-    'endDate': '01/03/1984'
-}
+plt.style.use('dark_background')
 
-resp = rq.get('http://server:8888/scrap', params=params)
+# %%
+fd = 'data/estacoes'
+files = os.listdir(fd)
 
-[_json] = json.loads(resp.content)
+len(files)
 
-_pd = pd.DataFrame(_json)
+# %%
+colnames = []
 
-_pd.to_csv('data/test.csv')
+for file in files:
+    fp = os.path.join(fd, file)
+    with open(fp, 'r') as f:
+        it = csv.DictReader(f, delimiter=';')
+        first = next(it)
+        ks = first.keys()
+        for k in ks:
+            if k not in colnames:
+                colnames.append(k)
+# %%
+for col in colnames:
+    print(f'{col} = Column(Float)')
+# %%
+estacoes = pd.read_csv("data/estacoes.csv", sep="\t")
+
+# %%
+estacoes = estacoes.rename(columns=lambda x: x.lower())
+
+# %%
+for col in estacoes.columns:
+    print(f'{col} = Column()')
+
+
+# %%
+brasil_q = br.session.query(br.UF)
+brasil_gp = gp.read_postgis(brasil_q.statement, br.connect, 'geometria')
+
+# %%
+brasil_gp.plot()
+plt.axis('off')
+
+# %%
+altitude = pd.read_csv('data/altitude_grid.csv')
+# %%
+altitude_gp = gp.GeoDataFrame(altitude, geometry=gp.points_from_xy(altitude.longitude, altitude.latitude))
+
+# %%
+altitude_gp.plot(column='altitude', markersize=0.1)
+a = plt.axis('off')
+plt.savefig('out/cover.png')
+# %%

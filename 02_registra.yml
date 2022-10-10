@@ -8,7 +8,7 @@ services:
       - "62000:8888"
     volumes:
       - ./:/home/jovyan/app:Z
-    command: jupyter notebook --ip=0.0.0.0 --no-browser
+    command: wait-for-it.sh pg:5432 -- python bin/02_registra.py
     # restart: on-failure:10
    
   pg:
@@ -20,17 +20,7 @@ services:
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
 
-  pg_brasil:
-    image: postgis/postgis:latest
-    volumes:
-      - pg_brasil:/var/lib/postgresql/data:Z
-    environment:
-      - POSTGRES_HOST_AUTH_METHOD=trust
-
 volumes:
   pg_temperatura:
     external: true
     name: pg_temperatura
-  pg_brasil:
-    external: true
-    name: pg_brasil
