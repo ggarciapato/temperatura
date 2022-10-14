@@ -7,8 +7,8 @@ import datetime as dt
 
 
 def itera_data(data_inicial, isAuto):
-    dt_inicio = max([data_inicial, dt.datetime(1961, 1, 1)])
-    data_limite = dt.datetime(2021, 12, 1)
+    dt_inicio = max([data_inicial, dt.datetime(2021, 12, 1)])
+    data_limite = dt.datetime(2022, 1, 1)
     _di = dt_inicio
     while _di < data_limite:
         _df = _di + dt.timedelta(days=60 if isAuto else 150)
@@ -26,7 +26,8 @@ def pega_linha(row):
     fn = 'data/estacoes/{n}_{i}_{f}.csv'
     _dt = row.DT_INICIO_OPERACAO
 
-    isAuto = 'A' in estacao or 'B' in estacao
+    # isAuto = 'A' in estacao or 'B' in estacao
+    isAuto = False
 
     if isAuto:
         new_cols = [

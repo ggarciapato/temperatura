@@ -31,7 +31,10 @@ def insert_registry():
     fd_in = 'data/estacoes'
     f_list = os.listdir(fd_in)
     f_list.sort()
+    # idx = f_list.index("83536_1995-09-24_1996-02-21.csv")
     files = [os.path.join(fd_in, f) for f in f_list]
+    # print(idx)
+    # files = files[idx:]
 
     counter_orm = (
         pg.session
@@ -119,8 +122,8 @@ def insert_altitude():
 
 
 def main():
-    insert_station()
-    insert_altitude()
+    # insert_station()
+    # insert_altitude()
     insert_registry()
 
 

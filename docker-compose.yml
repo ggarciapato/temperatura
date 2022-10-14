@@ -3,13 +3,21 @@ services:
   jupyter:
     depends_on:
       - pg
-    image: mpl_jupyter
+    image: tensorflow_jupyter
     ports:
       - "62000:8888"
     volumes:
       - ./:/home/jovyan/app:Z
+    runtime: nvidia
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
     command: jupyter notebook --ip=0.0.0.0 --no-browser
     # restart: on-failure:10
+
    
   pg:
     image: postgres:latest
