@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import tensorflow.compat.v2 as tf
-import tensorflow.probability as tfp
+import tensorflow_probability as tfp
+
+tf.get_logger().setLevel('INFO')
 
 tfb = tfp.bijectors
 tfd = tfp.distributions
@@ -25,7 +28,7 @@ def array_chunker(arr_, size=1000):
 
 
 # @pd.api.extensions.register_dataframe_accessor('gp_estimator')
-class GPEstimator:
+class GPREstimator:
     def __init__(self, pandas_obj, **kwargs) -> None:
         '''
         Prepare arguments for optimization
@@ -33,19 +36,32 @@ class GPEstimator:
         self._obj = pandas_obj
         self.parse_estimation(**kwargs)
         self.gp_joint_model = tfd.JointDistributionNamed({
-            'amplitude': tfd.LogNormal(loc=0., scale=np.float64(1.)),
-            'length_scale': tfd.LogNormal(loc=0., scale=np.float64(1.)),
-            'observation_noise_variance': tfd.LogNormal(loc=0., scale=np.float64(1.)),
-            'observations': self.build_gp,
+            'amplitude': tfd.LogNormal(
+                loc=0., scale=np.float64(1.)
+            ),
+            'length_scale': tfd.LogNormal(
+                loc=0., scale=np.float64(1.)
+            ),
+            'observation_noise_variance': tfd.LogNormal(
+                loc=0., scale=np.float64(1.)
+            ),
+            'observations': (
+                lambda 
+                amplitude, length_scale, observation_noise_variance: 
+                self.build_gp(
+                    amplitude=amplitude,
+                    length_scale=length_scale,
+                    observation_noise_variance=observation_noise_variance
+                )
+            )
         })
 
-        # 
-        # x = self.gp_joint_model.sample()
-        # lp = self.gp_joint_model.log_prob(x)
-
-        # Create the trainable model parameters, which we'll subsequently optimize.
+        # Create the trainable model parameters, 
+        # which we'll subsequently optimize.
         # Note that we constrain them to be strictly positive.
-        self.constrain_positive = tfb.Shift(np.finfo(np.float64).tiny)(tfb.Exp())
+        self.constrain_positive = tfb.Shift(
+            np.finfo(np.float64).tiny
+        )(tfb.Exp())
 
         self.amplitude_var = tfp.util.TransformedVariable(
             initial_value=1.,
@@ -84,7 +100,7 @@ class GPEstimator:
         obs_index=['vl_longitude', 'vl_latitude', 'vl_altitude'], 
         obs='year_mean'
     ):
-        self.observation_index_ = (
+        self.observation_indices_ = (
             self._obj.reset_index()[obs_index].to_numpy()
         )
         self.observations_ = self._obj[obs].to_numpy()
@@ -99,9 +115,11 @@ class GPEstimator:
         Defines the conditional dist. of GP outputs, 
         given kernel parameters.
         """
-        # Create the covariance kernel, which will be shared between the prior (which we
-        # use for maximum likelihood training) and the posterior (which we use for
-        # posterior predictive sampling)
+        # Create the covariance kernel, 
+        # which will be shared between the prior 
+        # (which we use for maximum likelihood training) 
+        # and the posterior 
+        # (which we use for posterior predictive sampling)
         kernel = tfk.ExponentiatedQuadratic(amplitude, length_scale)
 
         # Create the GP prior distribution, 
@@ -127,11 +145,12 @@ class GPEstimator:
 
     def optimize(
         self,
-        num_iters=1000, 
+        num_iters=10000, 
         optimizer=tf.optimizers.Adam(learning_rate=.01)
     ):
 
-        # Store the likelihood values during training, so we can plot the progress
+        # Store the likelihood values during training, 
+        # so we can plot the progress
         lls_ = np.zeros(num_iters, np.float64)
         for i in range(num_iters):
             with tf.GradientTape() as tape:
@@ -146,6 +165,13 @@ class GPEstimator:
 
         self.log_lik = lls_
 
+    def plot_loglik(self):
+        x = range(self.log_lik.shape[0])
+        plt.ylabel('Log likelihood')
+        plt.xlabel('Iteration')
+        plt.plot(x, self.log_lik)
+        plt.show()
+
     def print_parameters(self):
         print('Trained parameters:')
         print(f'amplitude: {self.amplitude_var._value().numpy()}')
@@ -156,7 +182,7 @@ class GPEstimator:
         )
 
     def predict(self, predictive_indices_):
-        optimized_kernel = tfk.ExponentiatedQuadratic(
+        self.optimized_kernel = tfk.ExponentiatedQuadratic(
             self.amplitude_var, 
             self.length_scale_var
         )
@@ -167,7 +193,7 @@ class GPEstimator:
 
         gprm_static = tfd.GaussianProcessRegressionModel(
             kernel=self.optimized_kernel,
-            observation_index_points=self.observation_index_points_,
+            observation_index_points=self.observation_indices_,
             observations=self.observations_,
             observation_noise_variance=self.observation_noise_variance_var,
             predictive_noise_variance=0.
