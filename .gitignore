@@ -7,3 +7,4 @@ lib/__pycache__/
 data/estacoes/
 data/processed/
 .Trash-1000/
+data/yearly_estimates.csv
