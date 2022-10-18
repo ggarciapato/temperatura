@@ -26,8 +26,6 @@ def array_chunker(arr_, size=1000):
             yield chunk
 
 
-
-# @pd.api.extensions.register_dataframe_accessor('gp_estimator')
 class GPREstimator:
     def __init__(self, pandas_obj, **kwargs) -> None:
         '''
